@@ -8,7 +8,9 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 from pprint import pprint
 import pandas as pd
-import pyTigerGraph as tg
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 # Set up TWINT config
 c = twint.Config()
 
@@ -45,6 +47,9 @@ def available_columns():
 def twint_to_pandas(columns):
       return twint.output.panda.Tweets_df[columns]
 
+news_data = pd.read_csv("labeled_food_news2.csv")
+
+vectorizer = TfidfVectorizer()
 
 df_pd = twint_to_pandas(["date", "username", "tweet", "hashtags", "nlikes"])
 
@@ -89,5 +94,43 @@ cloud_tweets = df_pd.tweet.apply(lambda twt: clean_tweet(twt))
 wordcloud = WordCloud(background_color='white', width= 800, height = 350,).generate(str(cloud_tweets))
 st.image(wordcloud.to_array())
 
+P_t = df_pd[df_pd['nlikes'] == df_pd['nlikes'].max()]
+news_vectors = vectorizer.fit_transform(news_data['processed_summary'].astype('U').values)
+tweet_vector = vectorizer.transform(P_t['tweet'])
+
+similarities = cosine_similarity(tweet_vector, news_vectors)
+
+str_sim = [str(i) for i in similarities]
+closest = np.argmax(similarities, axis=1)
+
+st.write(str(str_sim[:10]))
+st.subheader(str(df_pd[df_pd['nlikes'] == df_pd['nlikes'].max()].astype('U').values))
+
+st.subheader("Article 1:", str(news_data['title'].iloc[closest].values[0]))
+
+st.write(str(news_data['summary'].iloc[closest].values[0]))
+
+st.write(str(news_data['link'].iloc[closest].values[0]))
+
+st.write(str(news_data['published_date'].iloc[closest].values[0]))
+
+st.subheader("Article 2:", str(news_data['title'].iloc[closest].values[0][1]))
+
+st.write(str(news_data['summary'].iloc[closest].values[0][1]))
+
+st.write(str(news_data['link'].iloc[closest].values[0][1]))
+
+st.write(str(news_data['published_date'].iloc[closest].values[0][1]))
+'''
+st.subheader("Article 3:", str(news_data['title'].iloc[closest].values[2]))
+
+st.write(str(news_data['summary'].iloc[closest].values[2]))
+
+st.write(str(news_data['link'].iloc[closest].values[2]))
+
+st.write(str(news_data['published_date'].iloc[closest].values[2]))
+'''
 st.write(len(df_pd))
+
+
 
